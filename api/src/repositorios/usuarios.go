@@ -114,7 +114,7 @@ func (repositorios Usuarios) Deletar(ID uint64) error {
 
 	defer stmt.Close()
 
-	if _, erro := stmt.Exec(&ID); erro != nil {
+	if _, erro := stmt.Exec(ID); erro != nil {
 		return erro
 	}
 
