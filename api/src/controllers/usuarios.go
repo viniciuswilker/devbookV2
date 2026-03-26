@@ -29,7 +29,7 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if erro := usuario.Preparar(); erro != nil {
+	if erro := usuario.Preparar("cadastro"); erro != nil {
 		respostas.Erro(w, http.StatusUnprocessableEntity, erro)
 		return
 	}
@@ -104,9 +104,73 @@ func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 }
 
 func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("AtualizarUsuario"))
+
+	parametros := mux.Vars(r)
+
+	usuarioID, erro := strconv.ParseUint(parametros["usuarioId"], 10, 64)
+	if erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	corpoReq, erro := ioutil.ReadAll(r.Body)
+	if erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+	var usuario models.Usuario
+
+	if erro = json.Unmarshal(corpoReq, &usuario); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	if erro := usuario.Preparar("edicao"); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := database.Conectar()
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorios := repositorios.NovoRepositorioUsuarios(db)
+
+	if erro := repositorios.Atualizar(usuarioID, usuario); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	respostas.JSON(w, http.StatusNoContent, nil)
 }
 
 func DeletarUsuario(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("DeletarUsuario"))
+
+	parametros := mux.Vars(r)
+
+	usuarioID, erro := strconv.ParseUint(parametros["usuarioId"], 10, 64)
+	if erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := database.Conectar()
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	defer db.Close()
+
+	repositorios := repositorios.NovoRepositorioUsuarios(db)
+
+	if erro := repositorios.Deletar(usuarioID); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	respostas.JSON(w, http.StatusNoContent, nil)
 }
